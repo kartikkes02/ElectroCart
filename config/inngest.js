@@ -69,7 +69,7 @@
 
 import User from "@/models/User";
 import { Inngest } from "inngest";
-import { connectDB } from "@/lib/mongodb"; // Add your connectDB import
+import { connectDB } from "../lib/mongodb";  // Add your connectDB import
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "electrocart" });
