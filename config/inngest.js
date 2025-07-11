@@ -1,5 +1,6 @@
 import User from "@/models/User";
 import { Inngest } from "inngest";
+import { connectDB } from "@/lib/mongodb";
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "electrocart" });
@@ -7,9 +8,6 @@ export const inngest = new Inngest({ id: "electrocart" });
 // Inngest function to save data
 
 export const syncUserCreation = inngest.createFunction(
-  { 
-    name: "ElectroCart Function" 
-},
 {
     id: 'sync-user-from-clerk'
 },
