@@ -1,26 +1,28 @@
-import { auth } from "@clerk/nextjs";
 import { NextResponse } from "next/server";
 
 // GET handler for fetching user data
 export async function GET() {
+  console.log("GET /api/user/data called");
+  
   try {
-    const { userId } = auth();
+    // First, let's try without Clerk to isolate the issue
+    console.log("Inside try block");
     
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    
-    // Add your logic here to fetch user data
-    // For example:
     const userData = {
-      id: userId,
-      // Add other user data you want to return
+      message: "API is working",
+      timestamp: new Date().toISOString()
     };
     
+    console.log("About to return response:", userData);
     return NextResponse.json({ success: true, data: userData });
+    
   } catch (error) {
     console.error("Error in GET /api/user/data:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error("Error stack:", error.stack);
+    return NextResponse.json({ 
+      error: "Internal Server Error", 
+      message: error.message 
+    }, { status: 500 });
   }
 }
 
