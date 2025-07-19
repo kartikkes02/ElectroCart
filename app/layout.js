@@ -15,7 +15,7 @@ export default function RootLayout({ children }) {
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`${outfit.className} antialiased text-gray-700`}
+        <body className={`${outfit.className} antialiased text-gray-700` }
         data-new-gr-c-s-checked-loaded='14.1209.0'
         data-gr-ext-installed=''
       
