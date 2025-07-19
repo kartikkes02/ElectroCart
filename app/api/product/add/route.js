@@ -3,6 +3,7 @@ import { getAuth } from '@clerk/nextjs/server';
 import { v2 as cloudinary} from 'cloudinary';
 import { NextResponse } from 'next/server';
 import { resolve } from 'styled-jsx/css';
+import Product from "@/models/Product";
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
