@@ -1,86 +1,77 @@
+import { auth } from "@clerk/nextjs";
 import { NextResponse } from "next/server";
 
-// GET handler for fetching user data
 export async function GET() {
-  console.log("GET /api/user/data called");
-  
   try {
-    // First, let's try without Clerk to isolate the issue
-    console.log("Inside try block");
+    const { userId } = auth();
     
-    const userData = {
-      message: "API is working",
-      timestamp: new Date().toISOString()
+    // Return cart data structure even without authentication for development
+    const cartData = {
+      userId: userId || "anonymous",
+      cartItems: [], // Initialize as empty array
+      totalPrice: 0,
+      itemCount: 0
     };
     
-    console.log("About to return response:", userData);
-    return NextResponse.json({ success: true, data: userData });
+    // If you have a database, fetch actual cart data here:
+    // const userCart = await fetchCartFromDatabase(userId);
+    // if (userCart) {
+    //   cartData.cartItems = userCart.items || [];
+    //   cartData.totalPrice = userCart.total || 0;
+    //   cartData.itemCount = userCart.items?.length || 0;
+    // }
+    
+    return NextResponse.json(cartData);
     
   } catch (error) {
     console.error("Error in GET /api/user/data:", error);
-    console.error("Error stack:", error.stack);
-    return NextResponse.json({ 
-      error: "Internal Server Error", 
-      message: error.message 
+    
+    // Always return cartItems structure even on error
+    return NextResponse.json({
+      userId: null,
+      cartItems: [],
+      totalPrice: 0,
+      itemCount: 0,
+      error: "Failed to load cart data"
     }, { status: 500 });
   }
 }
 
-// POST handler for creating/updating user data
 export async function POST(request) {
   try {
     const { userId } = auth();
-    
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    
     const body = await request.json();
     
-    // Add your logic here to handle POST requests
-    // For example, save user data to database
+    // Handle adding items to cart
+    const { productId, quantity = 1, product } = body;
     
-    return NextResponse.json({ success: true, message: "Data saved successfully" });
+    if (!productId) {
+      return NextResponse.json({ error: "Product ID required" }, { status: 400 });
+    }
+    
+    // Add your cart logic here
+    // For now, return success with updated cart
+    const updatedCart = {
+      userId: userId || "anonymous",
+      cartItems: [
+        // Your existing cart items would go here
+        {
+          id: productId,
+          quantity,
+          ...product
+        }
+      ],
+      totalPrice: (product?.price || 0) * quantity,
+      itemCount: 1
+    };
+    
+    return NextResponse.json(updatedCart);
+    
   } catch (error) {
     console.error("Error in POST /api/user/data:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-  }
-}
-
-// PUT handler for updating user data
-export async function PUT(request) {
-  try {
-    const { userId } = auth();
-    
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    
-    const body = await request.json();
-    
-    // Add your logic here to handle PUT requests
-    
-    return NextResponse.json({ success: true, message: "Data updated successfully" });
-  } catch (error) {
-    console.error("Error in PUT /api/user/data:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-  }
-}
-
-// DELETE handler for deleting user data
-export async function DELETE() {
-  try {
-    const { userId } = auth();
-    
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    
-    // Add your logic here to handle DELETE requests
-    
-    return NextResponse.json({ success: true, message: "Data deleted successfully" });
-  } catch (error) {
-    console.error("Error in DELETE /api/user/data:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({
+      cartItems: [],
+      error: "Failed to add item to cart"
+    }, { status: 500 });
   }
 }
