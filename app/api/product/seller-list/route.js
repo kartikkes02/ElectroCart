@@ -1,5 +1,5 @@
 import authSeller from "@/lib/authSeller";
-import { getAuth } from "@clerk/nextjs/";
+import { getAuth } from "@clerk/nextjs";
 import { NextResponse } from "next/server";
 
 export async function GET(request) {
