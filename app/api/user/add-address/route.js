@@ -1,6 +1,6 @@
 import {getAuth} from '@clerk/nextjs/server';
 import {connectDB} from '@config/db';
-import Address from '@models/Address';
+import { Address } from '@models/Address';
 
 export async function POST(request) {
     try {
