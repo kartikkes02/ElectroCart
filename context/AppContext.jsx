@@ -143,22 +143,26 @@ export const AppContextProvider = (props) => {
   const [userData, setUserData] = useState(false);
   const [isSeller, setIsSeller] = useState(false);
   const [cartItems, setCartItems] = useState({});
+  const [isLoading, setIsLoading] = useState(true); // Add loading state
 
   const fetchProductData = async () => {
     try {
-      const {data} = await axios.get('/api/product/list');
+      const { data } = await axios.get('/api/product/list');
       if (data.success) {
         setProducts(data.products);
       } else {
         toast.error(data.message);
       }
     } catch (error) {
+      console.error('Error fetching products:', error);
       toast.error(error.message);
     }
   };
 
   const fetchUserData = async () => {
     try {
+      setIsLoading(true); // Set loading to true
+      
       if (
         user &&
         user.publicMetadata &&
@@ -167,61 +171,95 @@ export const AppContextProvider = (props) => {
         setIsSeller(true);
       }
       
-      const token = await getToken()
+      const token = await getToken();
 
-      const { data } = await axios.get('/api/user/data',{ headers: { Authorization: `Bearer ${token}`}})
-      if(data.success) {
-        setUserData(data.user)
-        setCartItems(data.user.cartItems || {})
-      } else{
-        toast.error(data.message);
+      const { data } = await axios.get('/api/user/data', { 
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log('API Response:', data); // Debug log
+      
+      if (data && data.success && data.user) {
+        setUserData(data.user);
+        // FIX: Multiple safety checks
+        setCartItems(data.user?.cartItems || {});
+      } else {
+        console.error('Invalid API response structure:', data);
+        toast.error(data?.message || 'Failed to fetch user data');
+        setCartItems({}); // Set empty cart on invalid response
       }
     } catch (error) {
-      console.error("Error fetching user data:", error);
-      toast.error(error.message);
+      console.error('Error fetching user data:', error);
+      toast.error(`Error fetching user data: ${error.message}`);
+      // FIX: Ensure cartItems stays as empty object on error
       setCartItems({});
+    } finally {
+      setIsLoading(false); // Set loading to false regardless of success/failure
     }
   };
 
   const addToCart = async (itemId) => {
-    let cartData = structuredClone(cartItems || {});
+    // FIX: Add safety check
+    if (!cartItems) {
+      console.error('cartItems is undefined, initializing...');
+      setCartItems({});
+      return;
+    }
+
+    let cartData = structuredClone(cartItems);
     if (cartData[itemId]) {
       cartData[itemId] += 1;
     } else {
       cartData[itemId] = 1;
     }
     setCartItems(cartData);
+    
     if (user) {
       try {
-        const token = await getToken()
-        await axios.post('/api/cart/update',{cartData},{headers:{Authorization: `Bearer ${token}`}});
+        const token = await getToken();
+        await axios.post('/api/cart/update', { cartData }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         toast.success('Items added to cart');
       } catch (error) {
+        console.error('Error adding to cart:', error);
         toast.error(error.message);
       }
     }
   };
 
   const updateCartQuantity = async (itemId, quantity) => {
-    let cartData = structuredClone(cartItems || {});
+    // FIX: Add safety check
+    if (!cartItems) {
+      console.error('cartItems is undefined, initializing...');
+      setCartItems({});
+      return;
+    }
+
+    let cartData = structuredClone(cartItems);
     if (quantity === 0) {
       delete cartData[itemId];
     } else {
       cartData[itemId] = quantity;
     }
     setCartItems(cartData);
+    
     if (user) {
       try {
-        const token = await getToken()
-        await axios.post('/api/cart/update',{cartData},{headers:{Authorization: `Bearer ${token}`}});
+        const token = await getToken();
+        await axios.post('/api/cart/update', { cartData }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         toast.success('Cart Updated');
       } catch (error) {
+        console.error('Error updating cart:', error);
         toast.error(error.message);
       }
     }
   };
 
   const getCartCount = () => {
+    // FIX: Add safety check
     if (!cartItems || typeof cartItems !== 'object') {
       return 0;
     }
@@ -236,10 +274,11 @@ export const AppContextProvider = (props) => {
   };
 
   const getCartAmount = () => {
-    if (!cartItems || typeof cartItems !== 'object') {
+    // FIX: Add safety checks
+    if (!cartItems || typeof cartItems !== 'object' || !Array.isArray(products)) {
       return 0;
     }
-    
+
     let totalAmount = 0;
     for (const items in cartItems) {
       let itemInfo = products.find((product) => product._id === items);
@@ -250,35 +289,47 @@ export const AppContextProvider = (props) => {
     return Math.floor(totalAmount * 100) / 100;
   };
 
+  // Fixed: Only run fetchProductData once on mount
   useEffect(() => {
     fetchProductData();
   }, []);
 
+  // Fixed: Only run fetchUserData when user changes
   useEffect(() => {
     if (user) {
       fetchUserData();
     } else {
+      // If no user, reset everything and stop loading
+      setIsLoading(false);
       setCartItems({});
       setUserData(false);
       setIsSeller(false);
     }
-  }, [user]);
+  }, [user]); // Added dependency array
 
   const value = {
-    user,getToken,
-    currency,router,
-    isSeller,setIsSeller,
-    userData,fetchUserData,
-    products,fetchProductData,
-    cartItems: cartItems || {},
+    user,
+    getToken,
+    currency,
+    router,
+    isSeller,
+    setIsSeller,
+    userData,
+    fetchUserData,
+    products,
+    fetchProductData,
+    cartItems,
     setCartItems,
-    addToCart,updateCartQuantity,
-    getCartCount,getCartAmount,
+    addToCart,
+    updateCartQuantity,
+    getCartCount,
+    getCartAmount,
+    isLoading, // Add loading state to context
   };
 
   return (
     <AppContext.Provider value={value}>
-        {props.children}
+      {props.children}
     </AppContext.Provider>
   );
 };
